@@ -1,0 +1,142 @@
+<!--
+ Copyright (c) since the year 2016 Klaus Landsdorf (http://plus4nodered.com/)
+ All rights reserved.
+ node-red-contrib-modbus - The BSD 3-Clause License
+
+ @author <a href="mailto:klaus.landsdorf@bianco-royal.de">Klaus Landsdorf</a> (Bianco Royal)
+--> <script type='text/javascript'>
+RED.nodes.registerType("modbus-server",{
+     category:"Modbus",
+     color:"#E9967A",
+     defaults:{
+          name:{value:""},
+          logEnabled:{value:!1},
+          hostname:{value:"0.0.0.0"},
+          serverPort:{value:10502,required:!0,validate:RED.validators.number()},
+          responseDelay:{value:100,required:!0,validate:RED.validators.number()},
+          delayUnit:{value:"ms",required:!0,validate:function(e){return"ms"==e||"s"==e||"m"==e||"h"==e}},
+          coilsBufferSize:{value:1e4,validate:RED.validators.number()},
+          holdingBufferSize:{value:1e4,validate:RED.validators.number()},
+          inputBufferSize:{value:1e4,validate:RED.validators.number()},
+          discreteBufferSize:{value:1e4,validate:RED.validators.number()},
+          showErrors:{value:!1},showStatusActivities:{value:!1}
+     },
+    inputs:1,
+    outputs:5,
+    align:"right",
+    icon:"modbus.png",
+    paletteLabel:"Server",
+    label:function(){return this.name||"Server"}})
+</script>
+<script type='text/x-red' data-template-name='modbus-server'>
+ <div class='form-row'>
+     <label for='node-input-name'>
+         <i class='icon-tag'></i>
+         <span data-i18n='node-red:common.label.name'></span>
+     </label>
+     <input type='text' id='node-input-name' placeholder='名称'>
+ </div>
+ <div class='form-row'>
+     <label for='node-input-hostname'>
+         <i class='icon-tag'></i>
+         <span data-i18n='modbus-contrib.label.hostname'></span>
+     </label>
+     <input type='text' id='node-input-hostname' placeholder='0.0.0.0 (IPv4) or :: (IPv6)'>
+ </div>
+ <div class='form-row'>
+     <label for='node-input-serverPort'>
+         <i class='icon-tag'></i>
+         <span data-i18n='modbus-contrib.label.port'></span>
+     </label>
+     <input type='text' id='node-input-serverPort' placeholder='2000 to 65536'>
+ </div>
+ <!--
+     <div class="form-row">
+        <label for="node-input-responseDelay">
+            <i class="icon-tag"></i>
+            <span data-i18n="modbus-contrib.label.responseDelay"></span>
+        </label>
+        <input type="text" id="node-input-responseDelay" placeholder="100" style="max-width:120px">
+            <select id="node-input-delayUnit" style="max-width:160px">
+                <option value="ms">millisecond(s)</option>
+                <option value="s">second(s)</option>
+                <option value="m">minute(s)</option>
+                <option value="h">hour(s)</option>
+        </select>
+    </div>
+ -->
+    <div class='form-row'>
+       <label for='node-input-coilsBufferSize'>
+           <i class='icon-tag'></i>
+           <span data-i18n='modbus-contrib.label.coils'></span>
+       </label>
+       <input type='text' id='node-input-coilsBufferSize' placeholder='1024'>
+    </div>
+    <div class='form-row'>
+        <label for='node-input-holdingBufferSize'>
+            <i class='icon-tag'></i>
+            <span data-i18n='modbus-contrib.label.holdings'></span>
+        </label>
+        <input type='text' id='node-input-holdingBufferSize' placeholder='1024'>
+    </div>
+    <div class='form-row'>
+        <label for='node-input-inputBufferSize'>
+            <i class='icon-tag'></i>
+            <span data-i18n='modbus-contrib.label.inputs'></span>
+        </label>
+        <input type='text' id='node-input-inputBufferSize' placeholder='1024'>
+    </div>
+    <div class='form-row'>
+        <label for='node-input-discreteBufferSize'>
+            <i class='icon-tag'></i>
+            <span data-i18n='modbus-contrib.label.discretes'></span>
+        </label>
+        <input type='text' id='node-input-discreteBufferSize' placeholder='1024'>
+    </div> <hr>
+    <div class='form-row'>
+        <label style='min-width:190px' for='node-input-showStatusActivities'>
+            <i class='fa fa-th'></i>
+            <span data-i18n='modbus-contrib.label.showActivities'></span>
+        </label>
+        <input type='checkbox' id='node-input-showStatusActivities' style='max-width:30px'>
+    </div>
+    <div class='form-row'>
+        <label style='min-width:190px' for='node-input-showErrors'>
+            <i class='fa fa-th'></i>
+            <span data-i18n='modbus-contrib.label.showErrors'></span>
+        </label>
+        <input type='checkbox' id='node-input-showErrors' style='max-width:30px'>
+    </div>
+    <div class='form-row'>
+        <label style='min-width:190px' for='node-input-logEnabled'>
+            <i class='fa fa-th'></i>
+            <span data-i18n='modbus-contrib.label.logEnabled'></span>
+        </label>
+        <input type='checkbox' id='node-input-logEnabled' style='max-width:30px'>
+    </div>
+</script>
+<script type='text/x-red'
+data-help-name='modbus-server'>
+ <p>N节点提供基于节点Modbus（jsmodbus）的Modbus TCP服务器进行测试。ode to provide a Modbus TCP server based on node-modbus (jsmodbus) for testing.</p>
+ <p>在注入时，服务器将缓冲区发送到单独的输出</p>
+ <p>您可以使用Modbus写节点（FC）将数据写入服务器缓冲区。</p>
+ <p>您可以使用Modbus读取节点（FC）从服务器缓冲区读取数据。</p>
+ <p>输出1：保持缓冲区、类型、消息</p>
+ <p>输出2：线圈缓冲器，类型，消息</p>
+ <p>输出3：输入缓冲区、类型、消息</p>
+ <p>输出4：离散缓冲区，类型，消息</p>
+ <p>输出5：请求消息</p> <br>
+ <p>输入：在注入特殊有效载荷时，您可以直接写入任何寄存器。仅当您想模拟Modbus客户端时，才应使用此功能。
+    <code> msg.payload = { 'value': msg.payload, 'register': 'holding', 'address': 1 , 'disableMsgOutput' : 0 }; return msg; </code>
+ </p>
+ <p>该值也可以是UInt8数字的列表，它们将被写入缓冲区。</p>
+ <p> 有效记录是: </p>
+ <ul>
+    <li>holding </li>
+    <li>coils </li>
+    <li>input </li>
+    <li>discrete </li>
+ </ul>
+ 如果要在注入时禁用服务器输出，请设置disableMsgOutput。
+ <p></p>
+</script>

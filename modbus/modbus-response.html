@@ -1,0 +1,52 @@
+<!--
+ Copyright (c) since the year 2016 Klaus Landsdorf (http://plus4nodered.com/)
+ Copyright 2016 - Jason D. Harper, Argonne National Laboratory
+ Copyright 2015,2016 - Mika Karaila, Valmet Automation Inc.
+ All rights reserved.
+ node-red-contrib-modbus
+
+ @author <a href="mailto:klaus.landsdorf@bianco-royal.de">Klaus Landsdorf</a> (Bianco Royal)
+--> <script type='text/javascript'>
+RED.nodes.registerType("modbus-response",{
+     category:"Modbus",
+     color:"#E9967A",
+     defaults:{
+        name:{value:""},
+        registerShowMax:{
+          value:20,
+          validate:RED.validators.number()
+        }
+     },
+     inputs:1,
+     outputs:0,
+     align:"right",
+     icon:"modbus.png",
+     paletteLabel:"Response",
+     label:function(){
+         return this.name||"Response"
+     }
+}
+)
+</script>
+<script type='text/x-red' data-template-name='modbus-response'>
+ <div class='form-row'>
+    <label for='node-input-name'>
+       <i class='icon-tag'></i>
+          <span data-i18n='node-red:common.label.name'></span>
+    </label>
+    <input type='text' id='node-input-name' placeholder='名称'>
+ </div>
+ <div class='form-row'>
+    <label for='node-input-registerShowMax'>
+      <i class='fa fa-th'></i>
+      <span data-i18n='modbus-contrib.label.registerShowMax'></span>
+    </label>
+    <input type='text' id='node-input-registerShowMax' placeholder='注册以显示最大值.'>
+ </div>
+</script>
+<script type='text/x-red' data-help-name='modbus-response'>
+ <p>节点显示状态下Modbus读/写/取节点第二次输出的响应或响应长度。</p>
+ <p>Show Max Register是节点仅显示响应数组中有多少数据的边界。</p>
+ <p>该节点只是为了获取一些信息，不需要使用Modbus读/写/获取节点。</p>
+ <p>如果Modbus读/写/获取器发送数据非常快，请不要过多使用此节点。</p>
+</script>

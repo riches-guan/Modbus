@@ -1,0 +1,302 @@
+<!--
+ Copyright (c) since the year 2016 Klaus Landsdorf (http://plus4nodered.com/)
+ Copyright 2016 - Jason D. Harper, Argonne National Laboratory
+ Copyright 2015,2016 - Mika Karaila, Valmet Automation Inc.
+ Copyright 2013, 2016 IBM Corp. (node-red)
+ All rights reserved.
+ node-red-contrib-modbus
+
+ @author <a href="mailto:klaus.landsdorf@bianco-royal.de">Klaus Landsdorf</a> (Bianco Royal)
+--> <script type='text/javascript'> RED.nodes.registerType('modbus-read', {
+    category: 'Modbus',
+    color: '#E9967A',
+    defaults: {
+      name: {value: ''},
+      topic: {value: ''},
+      showStatusActivities: {value: false},
+      logIOActivities: {value: false},
+      showErrors: {value: false},
+      showWarnings: {value: true},
+      unitid: {value: ''},
+      dataType: {value: '', required: true},
+      adr: {value: '', required: true, validate: RED.validators.number()},
+      quantity: {value: '', required: true, validate: RED.validators.number()},
+      rate: {
+        value: '', required: true, validate: function (v) {
+          return v > 0
+        }
+      },
+      rateUnit: {
+        value: '', required: true, validate: function (v) {
+          return 'ms' == v || 's' == v || 'm' == v || 'h' == v
+        }
+      },
+      delayOnStart: {value: false},
+      startDelayTime: {value: ''},
+      server: {type: 'modbus-client', required: true},
+      useIOFile: {value: false},
+      ioFile: {value: '', type: 'modbus-io-config', required: false},
+      useIOForPayload: {value: false},
+      emptyMsgOnFail: {value: false}
+    },
+    inputs: 0,
+    outputs: 2,
+    align: "left",
+    icon: 'modbus.png',
+    paletteLabel: 'read',
+    label: function () {
+      let nodeLabel = this.name || 'read'
+      if (this.once) {
+        nodeLabel += ' ¹'
+      }
+      return nodeLabel
+    },
+    oneditprepare: function () {
+
+      let tabs = RED.tabs.create({
+        id: "node-input-modbus-tabs",
+        onchange: function (tab) {
+          $("#node-input-tabs-content").children().hide()
+          $("#" + tab.id).show()
+        }
+      })
+
+      tabs.addTab({
+        id: "modbus-settings-tab",
+        label: this._("modbus-contrib.tabs-label.settings")
+      })
+
+      tabs.addTab({
+        id: "modbus-options-tab",
+        label: this._("modbus-contrib.tabs-label.options")
+      })
+
+      let useIOFileCheckbox = $('#node-input-useIOFile')
+      let modbusiofileRow = $('#modbusiofile-row')
+
+      useIOFileCheckbox.change(function () {
+        if ($(this).is(':checked')) {
+          modbusiofileRow.show()
+        } else {
+          modbusiofileRow.hide()
+        }
+      })
+
+      if (this.delayOnStart) {
+        $('#node-delay').show()
+      }
+      else {
+        $('#node-delay').hide()
+        $('#node-input-delayOnStart').prop('checked', false)
+      }
+
+      $('#node-input-delayOnStart').change(function () {
+        if ($(this).is(':checked')) {
+          $('#node-delay').show()
+        } else {
+          $('#node-delay').hide()
+        }
+      })
+    },
+    button: {
+      onclick: function () {
+        let label = (this.name || 'read').replace(/&/g, '&amp').replace(/</g, '&lt').replace(/>/g, '&gt')
+        let node = this
+
+        $.ajax({
+          url: 'modbus/read/inject/' + node.id,
+          type: 'POST',
+          success: function (resp) {
+            RED.notify(node._('modbusinject.success', {label: label}), 'success')
+          },
+          error: function (jqXHR, textStatus, errorThrown) {
+            if (jqXHR.status === 404) {
+              RED.notify(node._('common.notification.error', {message: node._('common.notification.errors.not-deployed')}), 'error')
+            } else if (jqXHR.status === 500) {
+              RED.notify(node._('common.notification.error', {message: node._('modbusinject.errors.failed')}), 'error')
+            } else if (jqXHR.status === 0) {
+              RED.notify(node._('common.notification.error', {message: node._('common.notification.errors.no-response')}), 'error')
+            } else {
+              RED.notify(node._('common.notification.error', {
+                message: node._('common.notification.errors.unexpected', {
+                  status: jqXHR.status,
+                  message: textStatus
+                })
+              }), 'error')
+            }
+          }
+        })
+      }
+    }
+  })
+</script>
+<script type='text/x-red' data-template-name='modbus-read'>
+ <div class='form-row'>
+     <ul style='background:#fff;min-width:600px;margin-bottom:20px' id='node-input-modbus-tabs'></ul>
+ </div>
+ <div id='node-input-tabs-content' style='min-height:170px'>
+    <div id='modbus-settings-tab' style='display:none'>
+        <div class='form-row'>
+            <label for='node-input-name'>
+                <i class='icon-tag'></i>
+                <span data-i18n='node-red:common.label.name'></span>
+            </label>
+            <input type='text' id='node-input-name' placeholder='名称'>
+        </div>
+        <div class='form-row'>
+            <label for='node-input-topic'>
+                <i class='icon-tag'></i>
+                <span data-i18n='node-red:common.label.topic'></span>
+            </label>
+            <input type='text' id='node-input-topic' placeholder='主题'>
+        </div>
+        <div class='form-row'>
+            <label for='node-input-unitid'>
+                <i class='icon-bookmark'></i>
+                <span data-i18n='modbus-contrib.label.unitId'></span>
+            </label>
+            <input type='text' id='node-input-unitid'>
+        </div>
+        <div class='form-row'>
+            <label for='node-input-dataType'>
+                <i class='icon-list'></i>
+                <span data-i18n='modbus-contrib.label.functioncode'></span>
+            </label>
+            <select id='node-input-dataType'>
+                <option value='Coil'>FC 1: 读取继电器状态</option>
+                <option value='Input'>FC 2: 读取输入状态</option>
+                <option value='HoldingRegister'>FC 3: 读取保存寄存器</option>
+                <option value='InputRegister'>FC 4: 读取输入寄存器</option>
+            </select>
+        </div>
+         <div class='form-row'>
+             <label for='node-input-adr'>
+                 <i class='icon-home'></i>
+                 <span data-i18n='modbus-contrib.label.address'></span>
+             </label>
+             <input type='text' id='node-input-adr' placeholder='0:65535'>
+        </div>
+        <div class='form-row'>
+            <label for='node-input-quantity'>
+                <i class='icon-bookmark'></i>
+                <span data-i18n='modbus-contrib.label.quantity'></span>
+            </label>
+            <input type='text' id='node-input-quantity' placeholder='1-65535'>
+        </div>
+        <div class='form-row'>
+            <label for='node-input-rate'>
+                <i class='icon-bookmark'></i>
+                 <span data-i18n='modbus-contrib.label.pollrate'></span>
+             </label>
+             <input type='number' id='node-input-rate' placeholder='1-65535' style='max-width:120px'>
+             <select id='node-input-rateUnit' style='max-width:160px'>
+                 <option value='ms'>毫秒(s)</option>
+                 <option value='s'>秒(s)</option>
+                 <option value='m'>分钟(s)</option>
+                 <option value='h'>小时(s)</option>
+             </select>
+         </div>
+         <div class='form-row' id='node-delayonstart'>
+             <label for='node-input-delayOnStart' style='width:160px'>
+                 <i class='fa fa-power-off'></i>
+                 <span data-i18n='modbus-contrib.label.delayOnStart'></span>
+             </label>
+             <input type='checkbox' id='node-input-delayOnStart' style='width:40px'>
+         </div>
+         <div class='form-row' id='node-delay'>
+             <label for='node-input-startDelayTime'>
+                 <i class='fa fa-clock-o'></i>
+                 <span data-i18n='modbus-contrib.label.startDelayTime'></span>
+             </label>
+             <input type='text' id='node-input-startDelayTime' placeholder='10' style='width:80px'>
+         </div>
+         <div class='form-row'>
+             <label for='node-input-server'>
+                 <i class='icon-globe'></i>
+                 <span data-i18n='modbus-contrib.label.server'></span>
+             </label>
+             <input type='text' id='node-input-server'>
+         </div>
+     </div>
+     <div id='modbus-options-tab' style='display:none'>
+         <div class='form-row'>
+             <label style='min-width:190px' for='node-input-emptyMsgOnFail'>
+                 <i class='fa fa-th'></i>
+                 <span data-i18n='modbus-contrib.label.emptyMsgOnFail'></span>
+             </label>
+             <input type='checkbox' id='node-input-emptyMsgOnFail' style='max-width:30px'>
+         </div>
+         <div class='form-row'>
+             <label style='min-width:190px' for='node-input-showStatusActivities'>
+                 <i class='fa fa-th'></i>
+                 <span data-i18n='modbus-contrib.label.showActivities'></span>
+             </label> <input type='checkbox' id='node-input-showStatusActivities' style='max-width:30px'>
+         </div>
+         <div class='form-row'>
+             <label style='min-width:190px' for='node-input-showErrors'>
+                 <i class='fa fa-th'></i>
+                 <span data-i18n='modbus-contrib.label.showErrors'></span>
+             </label>
+             <input type='checkbox' id='node-input-showErrors' style='max-width:30px'>
+         </div>
+         <div class='form-row'>
+             <label style='min-width:190px' for='node-input-showWarnings'>
+                 <i class='fa fa-th'></i>
+                 <span data-i18n='modbus-contrib.label.showWarnings'></span>
+             </label>
+             <input type='checkbox' checked='checked' id='node-input-showWarnings' style='max-width:30px'>
+         </div> <hr> <div class='form-row'>
+         <label style='min-width:190px' for='node-input-useIOFile'>
+             <i class='fa fa-file-code-o'></i>
+             <span data-i18n='modbus-contrib.label.useIOFile'></span>
+         </label> <input type='checkbox' id='node-input-useIOFile' style='max-width:30px'>
+     </div>
+     <div id='modbusiofile-row'>
+         <div class='form-row'>
+             <label style='min-width:190px' for='node-input-logIOActivities'>
+                 <i class='fa fa-th'></i>
+                 <span data-i18n='modbus-contrib.label.logIOActivities'></span>
+             </label>
+             <input type='checkbox' id='node-input-logIOActivities' style='max-width:30px'>
+         </div>
+         <div class='form-row'>
+             <label style='min-width:190px' for='node-input-useIOForPayload'>
+                 <i class='fa fa-comment-o'></i>
+                 <span data-i18n='modbus-contrib.label.useIOForPayload'></span>
+             </label>
+             <input type='checkbox' id='node-input-useIOForPayload' style='max-width:30px'>
+         </div>
+         <div class='form-row'>
+             <label for='node-input-ioFile'>
+                 <i class='icon-file'></i>
+                 <span data-i18n='modbus-contrib.label.ioFile'></span>
+             </label>
+             <input type='text' id='node-input-ioFile'>
+         </div>
+     </div>
+    </div>
+ </div>
+</script>
+<script type='text/x-red' data-help-name='modbus-read'>
+  <p>
+    <strong>
+         如果您在一个通信配置上有10个以上的节点，请使用Modbus Flex Getter或考虑与您的Modbus设备建立多个连接！您也可以通过使用具有间隔的注入节点，使用Modbus Getter和Modbus Flex Getter进行轮询。
+    </strong>
+  </p>
+  <p>Modbus TCP/串口读取节点。</p>
+  <p>连接到Modbus TCP或串口，以给定的轮询速率读取寄存器/线圈值。</p>
+  <p> </p>
+  <h4>目前支持的功能代码包括:</h4>
+  <ul>
+    <li>FC 1: 读取继电器状态</li>
+    <li>FC 2: 读取输入状态</li>
+    <li>FC 3: 读取保存寄存器</li>
+    <li>FC 4: 读取输入寄存器</li>
+  </ul>
+  <p></p>
+  <p> 从下拉菜单中选择功能代码（FC），选择继电器/输入/寄存器起始地址（0:65535），以及从起始地址读取的继电器/输入或寄存器的数量。 </p>
+  <p>单元-Id（0..255 tcp|0..247串口）-留空，否则将覆盖客户端配置的默认单元Id</p>
+  <p>设置轮询率（大于零）和时间单位。选择或编辑Modbus连接配置。 </p>
+  <p>输出1：数据阵列（PDU）、modbus响应缓冲区、输入消息</p>
+  <p>O输出2:modbus响应缓冲区、数据数组（PDU）、输入消息</p>
+</script>

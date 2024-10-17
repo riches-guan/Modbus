@@ -1,0 +1,18 @@
+{
+    "modbus-contrib": {
+      "label": {
+        "showErrors": "显示错误",
+        "showWarnings": "显示警告",
+        "emptyMsgOnFail": "Modbus故障时的空消息",
+        "server": "服务",
+        "requestMap": "请求图编辑器",
+        "responseMap": "响应图编辑器",
+        "functioncode": "选择FC图",
+        "mapPath": "映射JSON的路径"
+      },
+      "tabs-label": {
+        "settings": "设置",
+        "options": "可选项"
+      }
+    }
+  }

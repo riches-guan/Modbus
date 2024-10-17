@@ -1,0 +1,155 @@
+<!--
+ Copyright (c) since the year 2016 Klaus Landsdorf (http://plus4nodered.com/)
+ Copyright 2016 - Jason D. Harper, Argonne National Laboratory
+ Copyright 2015,2016 - Mika Karaila, Valmet Automation Inc.
+ All rights reserved.
+ node-red-contrib-modbus
+
+ @author <a href="mailto:klaus.landsdorf@bianco-royal.de">Klaus Landsdorf</a> (Bianco Royal)
+--> <script type='text/javascript'> RED.nodes.registerType('modbus-write', {
+    category: 'Modbus',
+    color: '#E9967A',
+    defaults: {
+      name: {value: ''},
+      showStatusActivities: {value: false},
+      showErrors: {value: false},
+      showWarnings: {value: true},
+      unitid: {value: ''},
+      dataType: {value: '', required: true},
+      adr: {value: '', required: true, validate: RED.validators.number()},
+      quantity: {value: '', required: true, validate: RED.validators.number()},
+      server: {type: 'modbus-client', required: true},
+      emptyMsgOnFail: {value: false},
+      keepMsgProperties: {value: false},
+      delayOnStart: {value: false},
+      startDelayTime: {value: ''}
+    },
+    inputs: 1,
+    outputs: 2,
+    align: "right",
+    icon: 'modbus.png',
+    align: 'right',
+    paletteLabel: 'Write',
+    label: function () {
+      return this.name || 'Write'
+    },
+    oneditprepare: function () {
+      let previous = null
+      let node = this
+      let fcDataTypeSelector = $('#node-input-dataType')
+      let quantitySelector = $('#node-input-quantity')
+      let modbusWriteQuantityRow = $('#modbus-write-quantity')
+
+      let tabs = RED.tabs.create({
+        id: "node-input-modbus-tabs",
+        onchange: function (tab) {
+          $("#node-input-tabs-content").children().hide()
+          $("#" + tab.id).show()
+        }
+      })
+
+      tabs.addTab({
+        id: "modbus-settings-tab",
+        label: this._("modbus-contrib.tabs-label.settings")
+      })
+
+      tabs.addTab({
+        id: "modbus-options-tab",
+        label: this._("modbus-contrib.tabs-label.options")
+      })
+
+      if (this.delayOnStart) {
+        $('#node-delay').show()
+      }
+      else {
+        $('#node-delay').hide()
+        $('#node-input-delayOnStart').prop('checked', false)
+      }
+
+      $('#node-input-delayOnStart').change(function () {
+        if ($(this).is(':checked')) {
+          $('#node-delay').show()
+        } else {
+          $('#node-delay').hide()
+        }
+      })
+
+      fcDataTypeSelector.on('focus', function () {
+        previous = this.value
+      }).change(function () {
+        if (previous == null) {
+          previous = fcDataTypeSelector.val()
+        }
+
+        switch (fcDataTypeSelector.val()) {
+          case 'Coil':
+          case 'HoldingRegister':
+            node.quantity.required = false
+            quantitySelector.val(1)
+            modbusWriteQuantityRow.hide()
+            break
+          default:
+            node.quantity.required = true
+            modbusWriteQuantityRow.show()
+        }
+      })
+    }
+  }) </script> <script type='text/x-red' data-template-name='modbus-write'>
+ <div class='form-row'> <ul style='background:#fff;min-width:600px;margin-bottom:20px' id='node-input-modbus-tabs'></ul>
+ </div> <div id='node-input-tabs-content' style='min-height:170px'> <div id='modbus-settings-tab' style='display:none'> 
+<div class='form-row'> <label for='node-input-name'><i class='icon-tag'></i> 名称</label> <input type='text'
+id='node-input-name' placeholder='名称'> </div> <div class='form-row'> <label for='node-input-unitid'><i
+class='icon-bookmark'></i> <span data-i18n='modbus-contrib.label.unitId'></span></label> <input type='text' 
+id='node-input-unitid'> </div> <div class='form-row'> <label for='node-input-dataType'><i class='icon-list'></i> <span 
+data-i18n='modbus-contrib.label.functioncode'></span></label> <select id='node-input-dataType'> <option value='Coil'>
+FC 5: Force Single Coil</option> <option value='HoldingRegister'>FC 6: Preset Single Register</option> <option 
+value='MCoils'>FC 15: Force Multiple Coils</option> <option value='MHoldingRegisters'>FC 16: Preset Multiple Registers
+</option> </select> </div> <div class='form-row'> <label for='node-input-adr'><i class='icon-bookmark'></i> <span 
+data-i18n='modbus-contrib.label.address'></span></label> <input type='text' id='node-input-adr'> </div> <div 
+class='form-row' id='modbus-write-quantity'> <label for='node-input-quantity'><i class='icon-bookmark'></i> <span 
+data-i18n='modbus-contrib.label.quantity'></span></label> <input type='text' id='node-input-quantity' 
+placeholder='1-65535'> </div> <div class='form-row' id='node-delayonstart'> <label for='node-input-delayOnStart' 
+style='width:160px'> <i class='fa fa-power-off'></i> <span data-i18n='modbus-contrib.label.delayOnStart'></span></label>
+ <input type='checkbox' id='node-input-delayOnStart' style='width:40px'> </div> <div class='form-row' id='node-delay'> 
+<label for='node-input-startDelayTime'><i class='fa fa-clock-o'></i> <span 
+data-i18n='modbus-contrib.label.startDelayTime'></span></label> <input type='text' id='node-input-startDelayTime' 
+placeholder='10' style='width:80px'> </div> <div class='form-row'> <label for='node-input-server'><i 
+class='icon-bookmark'></i> <span data-i18n='modbus-contrib.label.server'></span></label> <input type='text' 
+id='node-input-server'> </div> </div> <div id='modbus-options-tab' style='display:none'> <div class='form-row'> <label 
+style='min-width:190px' for='node-input-emptyMsgOnFail'><i class='fa fa-th'></i> <span 
+data-i18n='modbus-contrib.label.emptyMsgOnFail'></span></label> <input type='checkbox' id='node-input-emptyMsgOnFail' 
+style='max-width:30px'> </div> <div class='form-row'> <label style='min-width:190px' for='node-input-keepMsgProperties'>
+<i class='fa fa-th'></i> <span data-i18n='modbus-contrib.label.keepMsgProperties'></span></label> <input 
+type='checkbox' id='node-input-keepMsgProperties' style='max-width:30px'> </div> <div class='form-row'> <label 
+style='min-width:190px' for='node-input-showStatusActivities'><i class='fa fa-th'></i> <span 
+data-i18n='modbus-contrib.label.showActivities'></span></label> <input type='checkbox' 
+id='node-input-showStatusActivities' style='max-width:30px'> </div> <div class='form-row'> <label 
+style='min-width:190px' for='node-input-showErrors'><i class='fa fa-th'></i> <span 
+data-i18n='modbus-contrib.label.showErrors'></span></label> <input type='checkbox' id='node-input-showErrors' 
+style='max-width:30px'> </div> <div class='form-row'> <label style='min-width:190px' for='node-input-showWarnings'><i 
+class='fa fa-th'></i> <span data-i18n='modbus-contrib.label.showWarnings'></span></label> <input type='checkbox' 
+checked='checked' id='node-input-showWarnings' style='max-width:30px'> </div> </div> </div>
+</script>
+<script
+type='text/x-red' data-help-name='modbus-write'>
+ <p><strong>如果您在一个通信配置上有10个以上的节点，请使用Modbus Flex Writer或考虑多个连接到您的Modbus设备！ </strong></p>
+  <p>Modbus TCP/串口节点用<strong>消息payload</strong>触发写入。</p>
+  <p>连接到Modbus TCP或串口，在每个输入消息处写入线圈/寄存器。</p>
+  <p> </p>
+  <h4>目前支持的功能代码包括:</h4>
+  <ul>
+      <li>FC 5: 强制单线圈</li>
+      <li>FC 6: 写单个寄存器</li>
+      <li>FC 15: 强制多线圈</li>
+      <li>FC 16: 写多个寄存器</li>
+  </ul> <p></p>
+  <p> 从下拉菜单中选择功能代码（FC），选择线圈/寄存器起始地址（0:65535）和要写入的数量。选择或编辑Modbus TCP/串口服务器配置，以指定要连接的服务器。 </p>
+  <p>单元Id（0..255 tcp|0..247串行）-留空，否则将覆盖客户端配置的默认单元Id</p>
+  <p> 对于FC 5，<strong>msg.payload</strong>必须为1或0或true或false。
+      对于FC 15，<strong>msg.payload</strong>必须是一个由逗号分隔的值组成的array[]，每个值为true或false。
+      对于FC 6，<strong>msg.payload</strong>必须是介于0:65535之间的单个值。
+      对于FC 16，<strong>msg.payload</strong>必须是一个由逗号分隔的值组成的array[]，每个值在0:65535之间。
+  </p>
+  <p>输出1：所有给定数据、modbus响应缓冲区、输入消息</p>
+  <p>输出2:modbus响应缓冲区，所有给定数据，输入消息</p>
+</script>
